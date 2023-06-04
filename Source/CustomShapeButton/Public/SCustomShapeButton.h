@@ -38,7 +38,6 @@ protected:
 	/** Contains cached information about the mouse event. */
 	FPointerEvent CurrentMouseEvent;
 
-	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
@@ -51,9 +50,6 @@ protected:
 
 	/** Set once on render thread the buffer data about all pixels of current texture if was not set before. */
 	virtual void TryUpdateRawColorsOnce();
-
-	/** Try register leaving the button (e.g. another widget opens above). */
-	virtual void TickDetectMouseLeave(float DeltaTime);
 
 	/** Try register On Hovered and On Unhovered events. */
 	virtual void TryDetectOnHovered();
