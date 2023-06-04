@@ -35,13 +35,6 @@ void SCustomShapeButton::SetCanHover(bool bAllow)
 	TryDetectOnHovered();
 }
 
-void SCustomShapeButton::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
-{
-	SButton::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
-
-	TickDetectMouseLeave(InDeltaTime);
-}
-
 FReply SCustomShapeButton::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
 	UpdateMouseData(MyGeometry, MouseEvent);
@@ -103,10 +96,7 @@ void SCustomShapeButton::OnMouseLeave(const FPointerEvent& MouseEvent)
 {
 	SButton::OnMouseLeave(MouseEvent);
 
-	if (!IsAlphaPixelHovered())
-	{
-		SetCanHover(false);
-	}
+	SetCanHover(false);
 }
 
 void SCustomShapeButton::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
@@ -208,23 +198,6 @@ void SCustomShapeButton::TryUpdateRawColorsOnce()
 		// Unlock
 		RHIUnlockTexture2D(RHITexture2D, MipIndex, bLockWithinMipTail);
 	});
-}
-
-// Try register leaving the button (e.g. another widget opens above)
-void SCustomShapeButton::TickDetectMouseLeave(float DeltaTime)
-{
-	if (bCanHover
-		&& CurrentGeometry.GetLocalSize().IsZero())
-	{
-		// Current data is zero, so widget is not hovered anymore
-		OnMouseLeave(CurrentMouseEvent);
-	}
-
-	// Reset data every tick, it will actualised during OnMouseMove
-	// so if data is empty, then Mouse Move did not happen
-	// and widget is not hovered anymore
-	static const FGeometry EmptyGeometry{};
-	CurrentGeometry = EmptyGeometry;
 }
 
 // Try register On Hovered and On Unhovered events
