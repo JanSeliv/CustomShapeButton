@@ -6,6 +6,8 @@
 //---
 #include "Components/ButtonSlot.h"
 #include "Framework/SlateDelegates.h"
+//---
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CustomShapeButton)
 
 // Default constructor
 UCustomShapeButton::UCustomShapeButton()
