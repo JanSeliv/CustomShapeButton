@@ -12,7 +12,7 @@
 // Default constructor
 UCustomShapeButton::UCustomShapeButton()
 {
-	ClickMethod = EButtonClickMethod::PreciseClick;
+	SetClickMethod(EButtonClickMethod::PreciseClick);
 }
 
 // Returns the slate shape button
@@ -30,10 +30,10 @@ TSharedRef<SWidget> UCustomShapeButton::RebuildWidget()
 											 .OnReleased(BIND_UOBJECT_DELEGATE(FSimpleDelegate, SlateHandleReleased))
 											 .OnHovered_UObject(this, &ThisClass::SlateHandleHovered)
 											 .OnUnhovered_UObject(this, &ThisClass::SlateHandleUnhovered)
-											 .ButtonStyle(&WidgetStyle)
-											 .ClickMethod(ClickMethod)
-											 .TouchMethod(TouchMethod)
-											 .IsFocusable(IsFocusable);
+											 .ButtonStyle(&GetStyle())
+											 .ClickMethod(GetClickMethod())
+											 .TouchMethod(GetTouchMethod())
+											 .IsFocusable(GetIsFocusable());
 	MyButton = NewButtonRef;
 
 	if (GetChildrenCount())
