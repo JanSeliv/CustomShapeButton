@@ -15,7 +15,7 @@ Detailed documentation about the Custom Shape Button can be found [here](https:/
 Check out our [Release](https://github.com/JanSeliv/CustomShapeButton/releases) page for a sample project showcasing the Custom Shape Button plugin.
 
 ## 📅 Changelog
-####
+#### 2023-10-21
 - Updated to **Unreal Engine 5.3**.
 #### 2023-06-04
 - 🎉 Initial public release on Unreal Engine 5.2
