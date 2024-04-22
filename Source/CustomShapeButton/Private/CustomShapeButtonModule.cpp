@@ -1,8 +1,10 @@
 ﻿// Copyright (c) Yevhenii Selivanov.
 
 #include "CustomShapeButtonModule.h"
+//---
+#include "Modules/ModuleManager.h"
 
-#define LOCTEXT_NAMESPACE "FCustomShapeButtonModule"
+IMPLEMENT_MODULE(FCustomShapeButtonModule, CustomShapeButton)
 
 // Called right after the module DLL has been loaded and the module object has been created
 void FCustomShapeButtonModule::StartupModule()
@@ -16,7 +18,3 @@ void FCustomShapeButtonModule::ShutdownModule()
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
 }
-
-#undef LOCTEXT_NAMESPACE
-
-IMPLEMENT_MODULE(FCustomShapeButtonModule, CustomShapeButton)
