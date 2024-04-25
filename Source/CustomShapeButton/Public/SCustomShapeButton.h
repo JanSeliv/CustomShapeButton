@@ -3,8 +3,9 @@
 #pragma once
 
 #include "Widgets/Input/SButton.h"
-
-class UTexture2D;
+//---
+#include "UObject/StrongObjectPtr.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 /**
  * Implements slate button with one difference:
@@ -19,9 +20,21 @@ public:
 	/** Allows button to be hovered. */
 	virtual void SetCanHover(bool bAllow);
 
+	/** Updates the internal texture size. */
+	virtual void SetTextureSize(const FIntPoint& InSize);
+
+	/** Forces to update the Raw Colors (pixels data) about current image.
+	 * @warning Is not recommended to use at all since often updates are expensive.
+	 * However, can be useful if button changes in runtime (new texture set or material is changing dynamically).
+	 * By default, image is cached only once at the beginning. */
+	void ForceUpdateImage();
+
 protected:
 	/** Cached buffer data about all pixels of current texture, is set once on render thread. */
-	TSharedPtr<TArray<FColor>, ESPMode::ThreadSafe> RawColorsPtr = nullptr;
+	TSharedPtr<TArray<FColor>> RawColorsPtr = nullptr;
+
+	/** Is created once if no render target was set before, cleanups on destruction. */
+	TStrongObjectPtr<UTextureRenderTarget2D> RenderTarget = nullptr;
 
 	/** Contains the size of current texture. */
 	FIntPoint TextureRes = FIntPoint::ZeroValue;
@@ -48,8 +61,14 @@ protected:
 	/** Returns true if cursor is hovered on a texture. */
 	virtual bool IsAlphaPixelHovered() const;
 
-	/** Set once on render thread the buffer data about all pixels of current texture if was not set before. */
+	/** Set once on render thread the buffer data about all pixels of current image if was not set before. */
 	virtual void TryUpdateRawColorsOnce();
+
+	/** Copies the buffer data from the texture. */
+	virtual void UpdateRawColors_Texture(const class UTexture2D& Texture);
+
+	/** Copies the buffer data from the material. */
+	virtual void UpdateRawColors_Material(class UMaterialInterface& Material);
 
 	/** Try register On Hovered and On Unhovered events. */
 	virtual void TryDetectOnHovered();

@@ -21,6 +21,15 @@ TSharedPtr<SCustomShapeButton> UCustomShapeButton::GetSlateCustomShapeButton() c
 	return StaticCastSharedPtr<SCustomShapeButton>(MyButton);
 }
 
+// Forces to update the Raw Colors (pixels data) about current image
+void UCustomShapeButton::ForceUpdateImage()
+{
+	if (const TSharedPtr<SCustomShapeButton> CustomShapeButton = GetSlateCustomShapeButton())
+	{
+		CustomShapeButton->ForceUpdateImage();
+	}
+}
+
 // Is called when the underlying SWidget needs to be constructed
 TSharedRef<SWidget> UCustomShapeButton::RebuildWidget()
 {
