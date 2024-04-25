@@ -7,11 +7,20 @@
 #include "RHIResources.h"
 #include "TextureResource.h"
 #include "Engine/Texture2D.h"
+#include "Engine/World.h"
+#include "Kismet/KismetRenderingLibrary.h"
+#include "Materials/MaterialInterface.h"
 
 // Virtual destructor, unregister data
 SCustomShapeButton::~SCustomShapeButton()
 {
 	RawColorsPtr.Reset();
+
+	if (IsValid(RenderTarget.Get()))
+	{
+		RenderTarget->ConditionalBeginDestroy();
+		RenderTarget.Reset();
+	}
 }
 
 /** Allows button to be hovered. */
@@ -33,6 +42,34 @@ void SCustomShapeButton::SetCanHover(bool bAllow)
 	SetHover(bHovered);
 
 	TryDetectOnHovered();
+}
+
+// Updates the internal texture size
+void SCustomShapeButton::SetTextureSize(const FIntPoint& InSize)
+{
+	if (!ensureMsgf(InSize.X > 0 && InSize.Y > 0, TEXT("ASSERT: [%i] %hs:\nTexture Size is not valid!"), __LINE__, __FUNCTION__)
+		|| TextureRes == InSize)
+	{
+		// Is already set
+		return;
+	}
+
+	TextureRes = InSize;
+
+	if (!RawColorsPtr)
+	{
+		RawColorsPtr = MakeShared<TArray<FColor>, ESPMode::ThreadSafe>();
+	}
+}
+
+// Forces to update the Raw Colors (pixels data) about current image
+void SCustomShapeButton::ForceUpdateImage()
+{
+	if (RawColorsPtr)
+	{
+		RawColorsPtr->Empty();
+		TryUpdateRawColorsOnce();
+	}
 }
 
 FReply SCustomShapeButton::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
@@ -118,8 +155,7 @@ bool SCustomShapeButton::IsAlphaPixelHovered() const
 	}
 
 	const TArray<FColor>* RawColors = RawColorsPtr.Get();
-	if (!RawColors
-		|| !RawColors->Num())
+	if (!RawColors)
 	{
 		// Raw Colors are not set
 		return false;
@@ -139,40 +175,58 @@ bool SCustomShapeButton::IsAlphaPixelHovered() const
 		return false;
 	}
 
-	constexpr int32 Alpha = 1;
-	const bool bIsAlphaPixelHovered = RawColorsArray[BufferPosition].A > Alpha;
-	return bIsAlphaPixelHovered;
+	const uint8 HoveredPixel = RawColorsArray[BufferPosition].A;
+	const uint8 HoveredPixelNormalized = HoveredPixel > 0 ? 1 : 0;
+
+	constexpr uint8 TextureAlpha = 1;
+	constexpr uint8 MaterialAlpha = 0;
+
+	return HoveredPixelNormalized == (RenderTarget ? MaterialAlpha : TextureAlpha);
 }
 
-// Set once on render thread the buffer data about all pixels of current texture if was not set before
+// Set once on render thread the buffer data about all pixels of current image if was not set before
 void SCustomShapeButton::TryUpdateRawColorsOnce()
 {
-	if (RawColorsPtr)
+	if (RawColorsPtr && !RawColorsPtr->IsEmpty())
 	{
-		// Is already valid
+		// Buffer data was already created (valid) AND contains pixels
 		return;
 	}
 
 	const FSlateBrush* ImageBrush = GetBorderImage();
-	const UTexture2D* ButtonTexture = ImageBrush ? Cast<UTexture2D>(ImageBrush->GetResourceObject()) : nullptr;
-	if (!ensureMsgf(ButtonTexture, TEXT("%s: 'HitTexture' is null, most likely no texture is set in the Button Style"), *FString(__FUNCTION__)))
+	UObject* InImage = ImageBrush ? ImageBrush->GetResourceObject() : nullptr;
+	if (!ensureMsgf(InImage, TEXT("%s: 'InImage' is null, most likely no texture is set in the Button Style"), *FString(__FUNCTION__)))
 	{
 		return;
 	}
 
-	TextureRes = FIntPoint(ButtonTexture->GetSizeX(), ButtonTexture->GetSizeY());
+	if (const UTexture2D* Texture = Cast<UTexture2D>(InImage))
+	{
+		UpdateRawColors_Texture(*Texture);
+	}
+	else if (UMaterialInterface* Material = Cast<UMaterialInterface>(InImage))
+	{
+		UpdateRawColors_Material(*Material);
+	}
+	else
+	{
+		ensureMsgf(false, TEXT("ASSERT: [%i] %hs:\n'No image' is set!"), __LINE__, __FUNCTION__);
+	}
+}
 
-	// Create
-	RawColorsPtr = MakeShared<TArray<FColor>, ESPMode::ThreadSafe>();
-	RawColorsPtr->SetNum(TextureRes.X * TextureRes.Y);
+// Copies the buffer data from the texture
+void SCustomShapeButton::UpdateRawColors_Texture(const UTexture2D& Texture)
+{
+	SetTextureSize(FIntPoint(Texture.GetSizeX(), Texture.GetSizeY()));
 
 	// Get Raw Colors data on Render thread
-	const TWeakPtr<TArray<FColor>, ESPMode::ThreadSafe> InOutRawColorsWeakPtr = RawColorsPtr;
-	const TWeakObjectPtr<const UTexture2D> WeakTexture = ButtonTexture;
-	ENQUEUE_RENDER_COMMAND(TryUpdateRawColorsOnce)([InOutRawColorsWeakPtr, WeakTexture](FRHICommandListImmediate&)
+	const TWeakPtr<TArray<FColor>> InOutRawColorsWeakPtr = RawColorsPtr;
+	const TWeakObjectPtr<const UTexture2D> WeakTexture = &Texture;
+	const FIntRect TextureSize(0, 0, TextureRes.X, TextureRes.Y);
+	ENQUEUE_RENDER_COMMAND(TryUpdateRawColorsOnce)([InOutRawColorsWeakPtr, WeakTexture, TextureSize](FRHICommandListImmediate& RHICmdList)
 	{
 		TArray<FColor>* RawColors = InOutRawColorsWeakPtr.Pin().Get();
-		if (!ensureMsgf(RawColors, TEXT("%s: 'RawColors' is null, can not obtain its data"), *FString(__FUNCTION__)))
+		if (!ensureMsgf(RawColors, TEXT("%hs: 'RawColors' is null, can not obtain its data"), __FUNCTION__))
 		{
 			return;
 		}
@@ -180,24 +234,39 @@ void SCustomShapeButton::TryUpdateRawColorsOnce()
 		const UTexture2D* Texture2D = WeakTexture.Get();
 		const FTextureResource* TextureResource = Texture2D ? Texture2D->GetResource() : nullptr;
 		FRHITexture2D* RHITexture2D = TextureResource ? TextureResource->GetTexture2DRHI() : nullptr;
-		if (!ensureMsgf(RHITexture2D, TEXT("%s: 'RHITexture2D' is not valid"), *FString(__FUNCTION__)))
+		if (ensureMsgf(RHITexture2D, TEXT("%hs: 'RHITexture2D' is not valid"), __FUNCTION__))
 		{
-			return;
+			// Copy data to cache
+			RHICmdList.ReadSurfaceData(RHITexture2D, TextureSize, /*out*/*RawColors, FReadSurfaceDataFlags());
 		}
-
-		// Lock
-		uint32 DestPitch = 0;
-		constexpr int32 MipIndex = 0;
-		constexpr bool bLockWithinMipTail = false;
-		const uint8* MappedTextureMemory = static_cast<const uint8*>(RHILockTexture2D(RHITexture2D, MipIndex, RLM_ReadOnly, DestPitch, bLockWithinMipTail));
-
-		// Copy data
-		const int32 Count = RawColors->Num() * sizeof(FColor);
-		FMemory::Memcpy(/*dest*/RawColors->GetData(), /*source*/MappedTextureMemory, Count);
-
-		// Unlock
-		RHIUnlockTexture2D(RHITexture2D, MipIndex, bLockWithinMipTail);
 	});
+}
+
+// Copies the buffer data from the material
+void SCustomShapeButton::UpdateRawColors_Material(UMaterialInterface& Material)
+{
+	checkf(GWorld, TEXT("ERROR: [%i] %hs:\n'GWorld' is null!"), __LINE__, __FUNCTION__);
+
+	const FSlateBrush* Image = GetBorderImage();
+	checkf(Image, TEXT("ERROR: [%i] %hs:\n'Image' is null!"), __LINE__, __FUNCTION__);
+	const FVector2f ImageSize = Image->GetImageSize();
+	SetTextureSize(FIntPoint(ImageSize.X, ImageSize.Y));
+	checkf(RawColorsPtr.Get(), TEXT("ERROR: [%i] %hs:\n'RawColorsPtr' was not created!"), __LINE__, __FUNCTION__);
+
+	// Create new Render Target
+	if (!RenderTarget)
+	{
+		RenderTarget = TStrongObjectPtr(UKismetRenderingLibrary::CreateRenderTarget2D(GWorld, TextureRes.X, TextureRes.Y));
+	}
+
+	// Clear created Render Target now before rendering material
+	UKismetRenderingLibrary::ClearRenderTarget2D(GWorld, RenderTarget.Get());
+
+	// Render our material first before copying pixels data
+	UKismetRenderingLibrary::DrawMaterialToRenderTarget(GWorld, RenderTarget.Get(), &Material);
+
+	// Copy pixels data from Render Target to our cache
+	UKismetRenderingLibrary::ReadRenderTarget(GWorld, RenderTarget.Get(), /*out*/*RawColorsPtr);
 }
 
 // Try register On Hovered and On Unhovered events

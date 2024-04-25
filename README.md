@@ -4,7 +4,7 @@ The `Custom Shape Button` plugin revolutionizes the way buttons are designed in 
 
 With the `Custom Shape Button` plugin, you can now create buttons of any shape or form you envision. Whether you want a circular button, a star-shaped one, or one in the shape of a custom image, this plugin allows you to bring that vision to life. Additionally, the plugin ensures the hover and press behavior works flawlessly with the custom shapes, ensuring a seamless user experience.
 
-<img width="480" alt="CustomShapeButton" src="https://github.com/JanSeliv/CustomShapeButton/assets/20540872/09a504a4-b1aa-4992-8c18-4b2865f65340">
+![CustomShapeButton](https://github.com/JanSeliv/CustomShapeButton/assets/20540872/46c3be2c-b325-4528-a626-16a4bb2b4d9c)
 
 ## 📚 Documentation
 
@@ -15,6 +15,11 @@ Detailed documentation about the Custom Shape Button can be found [here](https:/
 Check out our [Release](https://github.com/JanSeliv/CustomShapeButton/releases) page for a sample project showcasing the Custom Shape Button plugin.
 
 ## 📅 Changelog
+#### 2024-04-25
+- Updated to **Unreal Engine 5.4**
+- Implemented **Materials Support** as alternative to textures: [doc](https://docs.google.com/document/d/1Ws76obIHRMtsdOjB6YP9K7LTjJR-R56h2uv65PKUBL4/edit#heading=h.jlxkng80vqbe):
+> ![image](https://github.com/JanSeliv/CustomShapeButton/assets/20540872/c4a083d2-494e-400f-b363-1ffa795024fa)
+
 #### 2023-10-21
 - Updated to **Unreal Engine 5.3**.
 #### 2023-06-04
