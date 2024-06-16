@@ -29,8 +29,16 @@ public:
 	 * By default, image is cached only once at the beginning. */
 	void ForceUpdateImage();
 
+	/** Returns cached buffer data about all pixels of current texture or material.
+	* It's updating on render thread, so is returned by copy to prevent concurrency issues. */
+	TArray<FColor> GetRawColors() const;
+
+	/** Calculates the index of the pixel under the cursor.
+	 * Returns -1 if the cursor is not on the button or can't access the data. */
+	uint32 GetCurrentPointIndex() const;
+
 protected:
-	/** Cached buffer data about all pixels of current texture, is set once on render thread. */
+	/** Cached buffer data about all pixels of current texture or material, is set once on render thread. */
 	TSharedPtr<TArray<FColor>> RawColorsPtr = nullptr;
 
 	/** Is created once if no render target was set before, cleanups on destruction. */
