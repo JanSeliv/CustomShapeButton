@@ -72,6 +72,33 @@ void SCustomShapeButton::ForceUpdateImage()
 	}
 }
 
+// Returns cached buffer data about all pixels of current texture or material
+TArray<FColor> SCustomShapeButton::GetRawColors() const
+{
+	const TArray<FColor>* RawColors = RawColorsPtr.Get();
+	return RawColors ? *RawColors : TArray<FColor>();
+}
+
+// Calculates the index of the pixel under the cursor
+uint32 SCustomShapeButton::GetCurrentPointIndex() const
+{
+	const FVector2D CurrentGeometrySize = CurrentGeometry.GetLocalSize();
+	if (CurrentGeometrySize.X <= 0.f || CurrentGeometrySize.Y <= 0.f)
+	{
+		return INDEX_NONE;
+	}
+
+	FVector2D LocalPosition = CurrentGeometry.AbsoluteToLocal(CurrentMouseEvent.GetScreenSpacePosition());
+	LocalPosition /= CurrentGeometrySize;
+	LocalPosition.X *= TextureRes.X;
+	LocalPosition.Y *= TextureRes.Y;
+	const uint32 LocalPositionX = FMath::FloorToInt(LocalPosition.X);
+	const uint32 LocalPositionY = FMath::FloorToInt(LocalPosition.Y);
+
+	const uint32 PixelRow = LocalPositionY * TextureRes.X;
+	return PixelRow + LocalPositionX;
+}
+
 FReply SCustomShapeButton::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
 	UpdateMouseData(MyGeometry, MouseEvent);
@@ -148,34 +175,20 @@ void SCustomShapeButton::OnMouseEnter(const FGeometry& MyGeometry, const FPointe
 // Returns true if cursor is hovered on a texture
 bool SCustomShapeButton::IsAlphaPixelHovered() const
 {
-	const FVector2D CurrentGeometrySize = CurrentGeometry.GetLocalSize();
-	if (CurrentGeometrySize.IsZero())
-	{
-		return false;
-	}
-
-	const TArray<FColor>* RawColors = RawColorsPtr.Get();
-	if (!RawColors)
+	const TArray<FColor> RawColorsCopy = GetRawColors();
+	if (RawColorsCopy.IsEmpty())
 	{
 		// Raw Colors are not set
 		return false;
 	}
 
-	FVector2D LocalPosition = CurrentGeometry.AbsoluteToLocal(CurrentMouseEvent.GetScreenSpacePosition());
-	LocalPosition.X = FMath::Floor(LocalPosition.X);
-	LocalPosition.Y = FMath::Floor(LocalPosition.Y);
-	LocalPosition /= CurrentGeometrySize;
-	LocalPosition.X *= TextureRes.X;
-	LocalPosition.Y *= TextureRes.Y;
-	const int32 BufferPosition = FMath::Floor(LocalPosition.Y) * TextureRes.X + LocalPosition.X;
-
-	const TArray<FColor>& RawColorsArray = *RawColors;
-	if (!RawColorsArray.IsValidIndex(BufferPosition))
+	const uint32 BufferPosition = GetCurrentPointIndex();
+	if (!RawColorsCopy.IsValidIndex(BufferPosition))
 	{
 		return false;
 	}
 
-	const uint8 HoveredPixel = RawColorsArray[BufferPosition].A;
+	const uint8 HoveredPixel = RawColorsCopy[BufferPosition].A;
 	const uint8 HoveredPixelNormalized = HoveredPixel > 0 ? 1 : 0;
 
 	constexpr uint8 TextureAlpha = 1;
