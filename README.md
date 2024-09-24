@@ -1,4 +1,24 @@
-# 🔘️ Custom Shape Button
+<a href="https://github.com/JanSeliv/CustomShapeButton/blob/main/LICENSE">![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)</a>
+<a href="https://www.unrealengine.com/">![Unreal Engine](https://img.shields.io/badge/Unreal-5.4-dea309?style=flat&logo=unrealengine)</a>
+
+<br/>
+<p align="center">
+<a href="https://github.com/JanSeliv/CustomShapeButton">
+<img src="https://github.com/JanSeliv/CustomShapeButton/blob/main/Resources/Icon128.png?raw=true" alt="Logo" width="80" height="80">
+</a>
+<h3 align="center">🔘 Custom Shape Button</h3>
+<p align="center">
+Create buttons of any custom shape easily
+<br/>
+<br/>
+<a href="https://discord.gg/jbWgwDefnE"><strong>Join our Discord ››</strong></a>
+<br/>
+<a href="https://github.com/JanSeliv/CustomShapeButton/releases">Releases</a>
+·
+<a href="https://docs.google.com/document/d/1Ws76obIHRMtsdOjB6YP9K7LTjJR-R56h2uv65PKUBL4"><strong>Docs</strong></a>
+</p>
+
+## 🌟 About
 
 The `Custom Shape Button` plugin revolutionizes the way buttons are designed in Unreal Engine. Traditionally, the Unreal Engine restricts you to creating buttons with only rectangular forms. This limitation, however, is eliminated by our plugin.
 
