@@ -1,5 +1,5 @@
 <a href="https://github.com/JanSeliv/CustomShapeButton/blob/main/LICENSE">![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)</a>
-<a href="https://www.unrealengine.com/">![Unreal Engine](https://img.shields.io/badge/Unreal-5.4-dea309?style=flat&logo=unrealengine)</a>
+<a href="https://www.unrealengine.com/">![Unreal Engine](https://img.shields.io/badge/Unreal-5.5-dea309?style=flat&logo=unrealengine)</a>
 
 <br/>
 <p align="center">
@@ -35,11 +35,12 @@ Detailed documentation about the Custom Shape Button can be found [here](https:/
 Check out our [Release](https://github.com/JanSeliv/CustomShapeButton/releases) page for a sample project showcasing the Custom Shape Button plugin.
 
 ## 📅 Changelog
+#### 
+- Updated to **Unreal Engine 5.5**
 #### 2024-04-25
 - Updated to **Unreal Engine 5.4**
 - Implemented **Materials Support** as alternative to textures: [doc](https://docs.google.com/document/d/1Ws76obIHRMtsdOjB6YP9K7LTjJR-R56h2uv65PKUBL4/edit#heading=h.jlxkng80vqbe):
 > ![image](https://github.com/JanSeliv/CustomShapeButton/assets/20540872/c4a083d2-494e-400f-b363-1ffa795024fa)
-
 #### 2023-10-21
 - Updated to **Unreal Engine 5.3**.
 #### 2023-06-04
@@ -51,7 +52,7 @@ Feedback and contributions from the community are highly appreciated!
 
 If you'd like to contribute, please fork the project and create a pull request targeting the `develop` branch.
 
-If you've found a bug or have an idea for a new feature, please open a new issue on GitHub. Thank you!
+If you've found a bug or have an idea for a new feature, please open a new issue on GitHub or join our [Discord](https://discord.gg/jbWgwDefnE). Thank you!
 
 ## 📜 License
 
