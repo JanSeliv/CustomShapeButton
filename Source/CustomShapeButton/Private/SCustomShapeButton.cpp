@@ -233,11 +233,11 @@ void SCustomShapeButton::UpdateRawColors_Texture(const UTexture2D& Texture)
 
 		const UTexture2D* Texture2D = WeakTexture.Get();
 		const FTextureResource* TextureResource = Texture2D ? Texture2D->GetResource() : nullptr;
-		FRHITexture2D* RHITexture2D = TextureResource ? TextureResource->GetTexture2DRHI() : nullptr;
-		if (ensureMsgf(RHITexture2D, TEXT("%hs: 'RHITexture2D' is not valid"), __FUNCTION__))
+		FRHITexture* RHITexture = TextureResource ? TextureResource->GetTexture2DRHI() : nullptr;
+		if (ensureMsgf(RHITexture, TEXT("%hs: 'RHITexture' is not valid"), __FUNCTION__))
 		{
 			// Copy data to cache
-			RHICmdList.ReadSurfaceData(RHITexture2D, TextureSize, /*out*/This->RawColors, FReadSurfaceDataFlags());
+			RHICmdList.ReadSurfaceData(RHITexture, TextureSize, /*out*/This->RawColors, FReadSurfaceDataFlags());
 		}
 	});
 }
