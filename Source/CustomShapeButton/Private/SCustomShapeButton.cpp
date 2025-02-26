@@ -72,15 +72,24 @@ uint32 SCustomShapeButton::GetCurrentPointIndex() const
 	const FVector2D CurrentGeometrySize = CurrentGeometry.GetLocalSize();
 	if (CurrentGeometrySize.X <= 0.f || CurrentGeometrySize.Y <= 0.f)
 	{
+		// No valid bounds are set
 		return INDEX_NONE;
 	}
 
 	FVector2D LocalPosition = CurrentGeometry.AbsoluteToLocal(CurrentMouseEvent.GetScreenSpacePosition());
+	if (!FMath::IsWithinInclusive(LocalPosition.X, 0.0, CurrentGeometrySize.X)
+		|| !FMath::IsWithinInclusive(LocalPosition.Y, 0.0, CurrentGeometrySize.Y))
+	{
+		// Cursor is out of button bounds
+		return INDEX_NONE;
+	}
+
 	LocalPosition /= CurrentGeometrySize;
 	LocalPosition.X *= TextureRes.X;
 	LocalPosition.Y *= TextureRes.Y;
-	const uint32 LocalPositionX = FMath::FloorToInt(LocalPosition.X);
-	const uint32 LocalPositionY = FMath::FloorToInt(LocalPosition.Y);
+
+	const uint32 LocalPositionX = FMath::Min(FMath::FloorToInt(LocalPosition.X), TextureRes.X - 1);
+	const uint32 LocalPositionY = FMath::Min(FMath::FloorToInt(LocalPosition.Y), TextureRes.Y - 1);
 
 	const uint32 PixelRow = LocalPositionY * TextureRes.X;
 	return PixelRow + LocalPositionX;
