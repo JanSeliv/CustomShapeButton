@@ -35,8 +35,9 @@ Detailed documentation about the Custom Shape Button can be found [here](https:/
 Check out our [Release](https://github.com/JanSeliv/CustomShapeButton/releases) page for a sample project showcasing the Custom Shape Button plugin.
 
 ## 📅 Changelog
-#### 
+#### 2025-06-27
 - Updated to **Unreal Engine 5.5**
+- [Bug] Fixed overlapping don't work on covered areas when stacked on top of each other: added `Overlap Order` setting for proper handing underlying buttons
 #### 2024-04-25
 - Updated to **Unreal Engine 5.4**
 - Implemented **Materials Support** as alternative to textures: [doc](https://docs.google.com/document/d/1Ws76obIHRMtsdOjB6YP9K7LTjJR-R56h2uv65PKUBL4/edit#heading=h.jlxkng80vqbe):

@@ -14,11 +14,16 @@
 class CUSTOMSHAPEBUTTON_API SCustomShapeButton : public SButton
 {
 public:
+	SCustomShapeButton();
+
 	/** Virtual destructor, unregister data. */
 	virtual ~SCustomShapeButton() override;
 
-	/** Allows button to be hovered. */
-	virtual void SetCanHover(bool bAllow);
+	/** Attempts to process the event and returns a reply.
+	 * @param OutReply The reply to be filled with the result of the event handling or remains the same if event was already handled.
+	 * @param Event The pointer event to handle.
+	 * @param Callback The callback to invoke if the event is handled. */
+	virtual void HandleEvent(FReply& OutReply, const FPointerEvent& Event, const TFunctionRef<FReply(const TSharedRef<SCustomShapeButton>&)>& Callback);
 
 	/** Updates the internal texture size. */
 	virtual void SetTextureSize(const FIntPoint& InSize);
@@ -43,40 +48,32 @@ protected:
 	/** Contains the size of current texture. */
 	FIntPoint TextureRes = FIntPoint::ZeroValue;
 
-	/** Is true when is allowed button to be hovered. */
-	bool bCanHover = false;
-
-	/** Contains cached true if on last frame the button was hovered. */
-	bool bIsHovered = false;
-
-	/** Contains cached geometry of the button. */
-	FGeometry CurrentGeometry;
-
 	/** Contains cached information about the mouse event. */
-	FPointerEvent CurrentMouseEvent;
+	FPointerEvent CachedPointerEvent;
 
 	virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual void OnMouseLeave(const FPointerEvent& MouseEvent) override;
+	virtual FReply OnMouseLeave_Unhovered(const FPointerEvent& MouseEvent);
 	virtual void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+	virtual FReply OnMouseEnter_Hovered(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);
 
-	/** Returns true if cursor is hovered on a texture. */
+	/** Returns true if cursor is hovered on a texture or material.
+	 * - Might be expensive to call frequently as it performs a full pixel check.
+	 * - It does not respect the overlap order returning true regardless of other widget layer.
+	 * Instead, prefer IsHovered(), which checks cached state and respects proper layering. */
 	virtual bool IsAlphaPixelHovered() const;
 
 	/** Set once on render thread the buffer data about all pixels of current image if was not set before. */
 	virtual void TryUpdateRawColorsOnce();
 
-	/** Copies the buffer data from the texture. */
+	/** Copies the buffer data from the texture.
+	 * For public access call TryUpdateRawColorsOnce instead. */
 	virtual void UpdateRawColors_Texture(const class UTexture2D& Texture);
 
-	/** Copies the buffer data from the material. */
+	/** Copies the buffer data from the material.
+	 * For public access call TryUpdateRawColorsOnce instead. */
 	virtual void UpdateRawColors_Material(class UMaterialInterface& Material);
-
-	/** Try register On Hovered and On Unhovered events. */
-	virtual void TryDetectOnHovered();
-
-	/** Caching current geometry and last mouse event. */
-	virtual void UpdateMouseData(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);
 };
