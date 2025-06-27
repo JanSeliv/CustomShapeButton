@@ -2,6 +2,7 @@
 
 #include "CustomShapeButton.h"
 //---
+#include "CustomShapeButtonManager.h"
 #include "SCustomShapeButton.h"
 //---
 #include "Components/ButtonSlot.h"
@@ -33,16 +34,18 @@ void UCustomShapeButton::ForceUpdateImage()
 // Is called when the underlying SWidget needs to be constructed
 TSharedRef<SWidget> UCustomShapeButton::RebuildWidget()
 {
+	// Super is not called intentionally to create own SCustomShapeButton object instead of SButton
+
 	const TSharedRef<SCustomShapeButton> NewButtonRef = SNew(SCustomShapeButton)
-											 .OnClicked(BIND_UOBJECT_DELEGATE(FOnClicked, SlateHandleClicked))
-											 .OnPressed(BIND_UOBJECT_DELEGATE(FSimpleDelegate, SlateHandlePressed))
-											 .OnReleased(BIND_UOBJECT_DELEGATE(FSimpleDelegate, SlateHandleReleased))
-											 .OnHovered_UObject(this, &ThisClass::SlateHandleHovered)
-											 .OnUnhovered_UObject(this, &ThisClass::SlateHandleUnhovered)
-											 .ButtonStyle(&GetStyle())
-											 .ClickMethod(GetClickMethod())
-											 .TouchMethod(GetTouchMethod())
-											 .IsFocusable(GetIsFocusable());
+		.OnClicked(BIND_UOBJECT_DELEGATE(FOnClicked, SlateHandleClicked))
+		.OnPressed(BIND_UOBJECT_DELEGATE(FSimpleDelegate, SlateHandlePressed))
+		.OnReleased(BIND_UOBJECT_DELEGATE(FSimpleDelegate, SlateHandleReleased))
+		.OnHovered_UObject(this, &ThisClass::SlateHandleHovered)
+		.OnUnhovered_UObject(this, &ThisClass::SlateHandleUnhovered)
+		.ButtonStyle(&GetStyle())
+		.ClickMethod(GetClickMethod())
+		.TouchMethod(GetTouchMethod())
+		.IsFocusable(GetIsFocusable());
 	MyButton = NewButtonRef;
 
 	if (GetChildrenCount())
@@ -53,5 +56,18 @@ TSharedRef<SWidget> UCustomShapeButton::RebuildWidget()
 		}
 	}
 
+	UCustomShapeButtonManager::Get().RegisterButton(this);
+
 	return NewButtonRef;
+}
+
+// Is called when the underlying SWidget needs to be destroyed
+void UCustomShapeButton::ReleaseSlateResources(bool bReleaseChildren)
+{
+	if (UCustomShapeButtonManager* CustomShapeButtonManager = UCustomShapeButtonManager::GetCustomShapeButtonManager())
+	{
+		CustomShapeButtonManager->UnregisterButton(this);
+	}
+
+	Super::ReleaseSlateResources(bReleaseChildren);
 }

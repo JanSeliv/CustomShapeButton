@@ -1,15 +1,26 @@
 ﻿// Copyright (c) Yevhenii Selivanov
 
 #include "SCustomShapeButton.h"
-//---
+
+// Custom Shape Button
+#include "CustomShapeButtonManager.h"
+
+// UE
 #include "RenderingThread.h"
 #include "RHICommandList.h"
 #include "RHIResources.h"
 #include "TextureResource.h"
+#include "Engine/Engine.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "Materials/MaterialInterface.h"
+
+SCustomShapeButton::SCustomShapeButton()
+{
+	// Reset standard hover behavior, it will be set by the custom logic
+	SetHover(false);
+}
 
 // Virtual destructor, unregister data
 SCustomShapeButton::~SCustomShapeButton()
@@ -19,31 +30,6 @@ SCustomShapeButton::~SCustomShapeButton()
 		RenderTarget->ConditionalBeginDestroy();
 		RenderTarget.Reset();
 	}
-}
-
-/** Allows button to be hovered. */
-void SCustomShapeButton::SetCanHover(bool bAllow)
-{
-	if (bCanHover == bAllow)
-	{
-		return;
-	}
-
-	bCanHover = bAllow;
-
-	TAttribute<bool> bHovered = false;
-	if (bAllow)
-	{
-		bHovered = MakeAttributeLambda([WeakThisPtr = StaticCastWeakPtr<SCustomShapeButton>(AsWeak())]() -> bool
-		{
-			const TSharedPtr<SCustomShapeButton> This = WeakThisPtr.Pin();
-			return This.IsValid() && This->IsAlphaPixelHovered();
-		});
-	}
-
-	SetHover(bHovered);
-
-	TryDetectOnHovered();
 }
 
 // Updates the internal texture size
@@ -69,6 +55,7 @@ void SCustomShapeButton::ForceUpdateImage()
 // Calculates the index of the pixel under the cursor
 uint32 SCustomShapeButton::GetCurrentPointIndex() const
 {
+	const FGeometry CurrentGeometry = GetCachedGeometry();
 	const FVector2D CurrentGeometrySize = CurrentGeometry.GetLocalSize();
 	if (CurrentGeometrySize.X <= 0.f || CurrentGeometrySize.Y <= 0.f)
 	{
@@ -76,7 +63,7 @@ uint32 SCustomShapeButton::GetCurrentPointIndex() const
 		return INDEX_NONE;
 	}
 
-	FVector2D LocalPosition = CurrentGeometry.AbsoluteToLocal(CurrentMouseEvent.GetScreenSpacePosition());
+	FVector2D LocalPosition = CurrentGeometry.AbsoluteToLocal(CachedPointerEvent.GetScreenSpacePosition());
 	if (!FMath::IsWithinInclusive(LocalPosition.X, 0.0, CurrentGeometrySize.X)
 		|| !FMath::IsWithinInclusive(LocalPosition.Y, 0.0, CurrentGeometrySize.Y))
 	{
@@ -97,75 +84,60 @@ uint32 SCustomShapeButton::GetCurrentPointIndex() const
 
 FReply SCustomShapeButton::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	UpdateMouseData(MyGeometry, MouseEvent);
-
-	if (!IsHovered())
-	{
-		// Avoid press event
-		return FReply::Unhandled();
-	}
-
-	return SButton::OnMouseButtonDown(MyGeometry, MouseEvent);
+	return HANDLE_EVENT(SButton::OnMouseButtonDown(MyGeometry, MouseEvent));
 }
 
 FReply SCustomShapeButton::OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	UpdateMouseData(MyGeometry, MouseEvent);
-
-	if (!IsHovered())
-	{
-		// Avoid press event
-		return FReply::Unhandled();
-	}
-
-	return SButton::OnMouseButtonDoubleClick(MyGeometry, MouseEvent);
+	return HANDLE_EVENT(SButton::OnMouseButtonDoubleClick(MyGeometry, MouseEvent));
 }
 
 FReply SCustomShapeButton::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	UpdateMouseData(MyGeometry, MouseEvent);
-
-	FReply Reply = FReply::Unhandled();
-	if (IsHovered())
-	{
-		Reply = SButton::OnMouseButtonUp(MyGeometry, MouseEvent);
-	}
-
-	SetCanHover(false);
-
-	return Reply;
+	return HANDLE_EVENT(SButton::OnMouseButtonUp(MyGeometry, MouseEvent));
 }
 
 FReply SCustomShapeButton::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	UpdateMouseData(MyGeometry, MouseEvent);
-
-	if (!bCanHover
-		&& IsAlphaPixelHovered())
-	{
-		// Allow to be hovered since mouse is hovered on alpha pixel
-		SetCanHover(true);
-	}
-
-	TryDetectOnHovered();
-
-	return SButton::OnMouseMove(MyGeometry, MouseEvent);
+	return HANDLE_EVENT(SButton::OnMouseMove(MyGeometry, MouseEvent));
 }
 
 void SCustomShapeButton::OnMouseLeave(const FPointerEvent& MouseEvent)
 {
+	HANDLE_EVENT(OnMouseLeave_Unhovered(MouseEvent));
+
+	// No logic is expected here, but in OnMouseLeave_Unhovered()
+}
+
+FReply SCustomShapeButton::OnMouseLeave_Unhovered(const FPointerEvent& MouseEvent)
+{
 	SButton::OnMouseLeave(MouseEvent);
 
-	SetCanHover(false);
+	SetHover(false);
+
+	// Call OnHovered\OnUnhovered event
+	ExecuteHoverStateChanged(true);
+
+	return FReply::Handled();
 }
 
 void SCustomShapeButton::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
+	HANDLE_EVENT(OnMouseEnter_Hovered(MyGeometry, MouseEvent));
+
+	// No logic is expected here, but in OnMouseEnter_Hovered()
+}
+
+FReply SCustomShapeButton::OnMouseEnter_Hovered(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
 	SButton::OnMouseEnter(MyGeometry, MouseEvent);
 
-	TryUpdateRawColorsOnce();
+	SetHover(true);
 
-	SetCanHover(true);
+	// Call OnHovered\OnUnhovered event
+	ExecuteHoverStateChanged(true);
+
+	return FReply::Handled();
 }
 
 // Returns true if cursor is hovered on a texture
@@ -174,6 +146,20 @@ bool SCustomShapeButton::IsAlphaPixelHovered() const
 	if (RawColors.IsEmpty())
 	{
 		// Raw Colors are not set
+		return false;
+	}
+
+	const EVisibility CurrentVisibility = GetVisibility();
+	if (CurrentVisibility == EVisibility::Collapsed
+		|| CurrentVisibility == EVisibility::Hidden)
+	{
+		// Button is not visible
+		return false;
+	}
+
+	if (!GetCachedGeometry().IsUnderLocation(CachedPointerEvent.GetScreenSpacePosition()))
+	{
+		// Button widget itself if not even under pointer, or UpdatePointerEvent was not refreshed
 		return false;
 	}
 
@@ -203,7 +189,7 @@ void SCustomShapeButton::TryUpdateRawColorsOnce()
 
 	const FSlateBrush* ImageBrush = GetBorderImage();
 	UObject* InImage = ImageBrush ? ImageBrush->GetResourceObject() : nullptr;
-	if (!ensureMsgf(InImage, TEXT("%s: 'InImage' is null, most likely no texture is set in the Button Style"), *FString(__FUNCTION__)))
+	if (!ensureMsgf(InImage, TEXT("%hs: 'InImage' is null, most likely no texture is set in the Button Style"), __FUNCTION__))
 	{
 		return;
 	}
@@ -218,7 +204,7 @@ void SCustomShapeButton::TryUpdateRawColorsOnce()
 	}
 	else
 	{
-		ensureMsgf(false, TEXT("ASSERT: [%i] %hs:\n'No image' is set!"), __LINE__, __FUNCTION__);
+		ensureMsgf(false, TEXT("ASSERT: [%i] %hs:\nNo image is set!"), __LINE__, __FUNCTION__);
 	}
 }
 
@@ -277,22 +263,41 @@ void SCustomShapeButton::UpdateRawColors_Material(UMaterialInterface& Material)
 	UKismetRenderingLibrary::ReadRenderTarget(GWorld, RenderTarget.Get(), /*out*/RawColors);
 }
 
-// Try register On Hovered and On Unhovered events
-void SCustomShapeButton::TryDetectOnHovered()
+// Attempts to process the event and returns a reply
+void SCustomShapeButton::HandleEvent(FReply& OutReply, const FPointerEvent& Event, const TFunctionRef<FReply(const TSharedRef<SCustomShapeButton>&)>& Callback)
 {
-	const bool bIsHoveredNow = bCanHover && IsHovered();
-	if (bIsHovered != bIsHoveredNow)
+	// Skip if button was already handled during previous iteration, unhover all underlay buttons
+	if (OutReply.IsEventHandled())
 	{
-		// Call OnHovered\OnUnhovered event
-		ExecuteHoverStateChanged(true);
+		if (IsHovered())
+		{
+			OnMouseLeave_Unhovered(Event);
+		}
+
+		return;
 	}
 
-	bIsHovered = bIsHoveredNow;
-}
+	CachedPointerEvent = Event;
+	TryUpdateRawColorsOnce();
 
-// Caching current geometry and last mouse event
-void SCustomShapeButton::UpdateMouseData(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
-{
-	CurrentGeometry = MyGeometry;
-	CurrentMouseEvent = MouseEvent;
+	const bool bIsHoveredNow = IsAlphaPixelHovered();
+	if (IsHovered() == bIsHoveredNow)
+	{
+		if (IsHovered())
+		{
+			Callback(SharedThis(this));
+			OutReply = FReply::Handled();
+		}
+
+		return;
+	}
+
+	if (bIsHoveredNow)
+	{
+		OutReply = OnMouseEnter_Hovered(GetCachedGeometry(), Event);
+	}
+	else
+	{
+		OutReply = OnMouseLeave_Unhovered(Event);
+	}
 }
