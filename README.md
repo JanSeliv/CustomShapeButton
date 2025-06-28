@@ -24,7 +24,7 @@ The `Custom Shape Button` plugin revolutionizes the way buttons are designed in 
 
 With the `Custom Shape Button` plugin, you can now create buttons of any shape or form you envision. Whether you want a circular button, a star-shaped one, or one in the shape of a custom image, this plugin allows you to bring that vision to life. Additionally, the plugin ensures the hover and press behavior works flawlessly with the custom shapes, ensuring a seamless user experience.
 
-![CustomShapeButton](https://github.com/JanSeliv/CustomShapeButton/assets/20540872/46c3be2c-b325-4528-a626-16a4bb2b4d9c)
+![CustomShapeButton](https://github.com/user-attachments/assets/68190cb1-a8a1-4931-9a75-fbe04ff37ec9)
 
 ## 📚 Documentation
 
