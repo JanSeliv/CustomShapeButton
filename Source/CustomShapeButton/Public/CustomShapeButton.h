@@ -35,7 +35,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Custom Shape Button")
 	void ForceUpdateImage();
 
+	/** Defines the button's Z-order priority for event handling.
+	 * Higher values mean the button is visually and interactively above others.
+	 * Used during registration to ensure correct overlap behavior. */
+	UPROPERTY(EditAnywhere, Category = "CustomShape")
+	int32 OverlapOrder = 0;
+
 protected:
 	/** Is called when the underlying SWidget needs to be constructed. */
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+
+	/** Is called when the underlying SWidget needs to be destroyed. */
+	virtual auto ReleaseSlateResources(bool bReleaseChildren) -> void override;
 };
