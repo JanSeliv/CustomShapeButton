@@ -1,5 +1,5 @@
 <a href="https://github.com/JanSeliv/CustomShapeButton/blob/main/LICENSE">![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)</a>
-<a href="https://www.unrealengine.com/">![Unreal Engine](https://img.shields.io/badge/Unreal-5.5-dea309?style=flat&logo=unrealengine)</a>
+<a href="https://www.unrealengine.com/">![Unreal Engine](https://img.shields.io/badge/Unreal-5.6-dea309?style=flat&logo=unrealengine)</a>
 
 <br/>
 <p align="center">
@@ -35,6 +35,8 @@ Detailed documentation about the Custom Shape Button can be found [here](https:/
 Check out our [Release](https://github.com/JanSeliv/CustomShapeButton/releases) page for a sample project showcasing the Custom Shape Button plugin.
 
 ## 📅 Changelog
+#### 2025-11-17
+- Updated to **Unreal Engine 5.6**
 #### 2025-06-27
 - Updated to **Unreal Engine 5.5**
 - [Bug] Fixed overlapping don't work on covered areas when stacked on top of each other: added `Overlap Order` setting for proper handing underlying buttons

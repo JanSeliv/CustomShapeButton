@@ -215,25 +215,34 @@ void SCustomShapeButton::UpdateRawColors_Texture(const UTexture2D& Texture)
 
 	// Get Raw Colors data on Render thread
 	TWeakPtr<SCustomShapeButton> WeakThisPtr = StaticCastWeakPtr<SCustomShapeButton>(AsWeak());
-	checkf(WeakThisPtr.IsValid(), TEXT("ERROR: [%i] %hs:\n'WeakThis' is not valid!"), __LINE__, __FUNCTION__);
-	const TWeakObjectPtr<const UTexture2D> WeakTexture = &Texture;
+	const TWeakObjectPtr WeakTexture(&Texture);
 	const FIntRect TextureSize(0, 0, TextureRes.X, TextureRes.Y);
 	ENQUEUE_RENDER_COMMAND(TryUpdateRawColorsOnce)([WeakThisPtr, WeakTexture, TextureSize](FRHICommandListImmediate& RHICmdList)
 	{
-		SCustomShapeButton* This = WeakThisPtr.Pin().Get();
-		if (!ensureMsgf(This, TEXT("ASSERT: [%i] %hs:\n'This' is not valid!"), __LINE__, __FUNCTION__))
+		const UTexture2D* Texture2D = WeakTexture.Get();
+		const FTextureResource* TextureResource = Texture2D ? Texture2D->GetResource() : nullptr;
+		FRHITexture* RHITexture = TextureResource ? TextureResource->GetTexture2DRHI() : nullptr;
+		if (!ensureMsgf(RHITexture, TEXT("%hs: 'RHITexture' is not valid"), __FUNCTION__))
 		{
 			return;
 		}
 
-		const UTexture2D* Texture2D = WeakTexture.Get();
-		const FTextureResource* TextureResource = Texture2D ? Texture2D->GetResource() : nullptr;
-		FRHITexture* RHITexture = TextureResource ? TextureResource->GetTexture2DRHI() : nullptr;
-		if (ensureMsgf(RHITexture, TEXT("%hs: 'RHITexture' is not valid"), __FUNCTION__))
+		// Obtain data
+		TArray<FColor> OutColors;
+		RHICmdList.ReadSurfaceData(RHITexture, TextureSize, OutColors, FReadSurfaceDataFlags());
+		if (!ensureMsgf(!OutColors.IsEmpty(), TEXT("ASSERT: [%i] %hs:\n'OutColors' is empty, failed to read texture data!"), __LINE__, __FUNCTION__))
 		{
-			// Copy data to cache
-			RHICmdList.ReadSurfaceData(RHITexture, TextureSize, /*out*/This->RawColors, FReadSurfaceDataFlags());
+			return;
 		}
+
+		// Set the data on Game thread
+		AsyncTask(ENamedThreads::GameThread, [WeakThisPtr, TempColors = MoveTemp(OutColors)]() mutable -> void
+		{
+			if (SCustomShapeButton* This = WeakThisPtr.Pin().Get())
+			{
+				This->RawColors = MoveTemp(TempColors);
+			}
+		});
 	});
 }
 
